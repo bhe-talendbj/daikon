@@ -14,8 +14,11 @@ package org.talend.daikon.properties.property;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.talend.daikon.NamedThing;
+import org.talend.daikon.crypto.Encryption;
 import org.talend.daikon.exception.ExceptionContext;
 import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.exception.error.CommonErrorCodes;
@@ -30,7 +33,13 @@ public class StringProperty extends Property<String> {
 
     private static final long serialVersionUID = -7464790471464008148L;
 
+    private static Logger log = Logger.getLogger(StringProperty.class.getCanonicalName());
+
     private List<NamedThing> possibleValues2;
+
+    private Encryption encryption;
+
+    private static final String ENCRYPTION_PREFIX = "aes:";
 
     public StringProperty(String name) {
         super(String.class, name);
@@ -102,13 +111,55 @@ public class StringProperty extends Property<String> {
     public void encryptStoredValue(boolean encrypt) {
         if (isFlag(Property.Flags.ENCRYPT)) {
             String value = (String) getStoredValue();
-            CryptoHelper ch = new CryptoHelper(CryptoHelper.PASSPHRASE);
             if (encrypt) {
-                setStoredValue(ch.encrypt(value));
+                setStoredValue(encrypt(value));
             } else {
-                setStoredValue(ch.decrypt(value));
+                setStoredValue(decrypt(value));
             }
         }
+    }
+
+    @Override
+    public Property<String> setEncryption(Encryption e) {
+        this.encryption = e;
+        return this;
+    }
+
+    private String encrypt(String src) {
+        // backward compatibility
+        if (src == null) {
+            return null;
+        }
+
+        if (this.encryption != null) {
+            try {
+                return ENCRYPTION_PREFIX + encryption.encrypt(src);
+            } catch (Exception e) {
+                // for backward compatibility
+                log.log(Level.FINE, e.getMessage(), e);
+            }
+            return null;
+        }
+        return new CryptoHelper(CryptoHelper.PASSPHRASE).encrypt(src);
+    }
+
+    private String decrypt(String src) {
+        // backward compatibility
+        if (src == null || src.isEmpty()) {
+            return src;
+        }
+
+        // only decrypt items persisted by AES encryption
+        if (this.encryption != null && src.startsWith(ENCRYPTION_PREFIX)) {
+            try {
+                return encryption.decrypt(src.substring(ENCRYPTION_PREFIX.length()));
+            } catch (Exception e) {
+                // for backward compatibility
+                log.log(Level.FINE, e.getMessage(), e);
+            }
+            return null;
+        }
+        return new CryptoHelper(CryptoHelper.PASSPHRASE).decrypt(src);
     }
 
 }

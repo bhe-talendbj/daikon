@@ -26,6 +26,7 @@ import org.apache.commons.lang3.reflect.TypeLiteral;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.talend.daikon.NamedThing;
 import org.talend.daikon.SimpleNamedThing;
+import org.talend.daikon.crypto.Encryption;
 import org.talend.daikon.exception.ExceptionContext;
 import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.exception.error.CommonErrorCodes;
@@ -498,6 +499,14 @@ public class Property<T> extends SimpleNamedThing implements AnyProperty {
      */
     public void encryptStoredValue(boolean encrypt) {
         // do nothing by default see StringProperty for an example
+    }
+
+    /**
+     * Set Encryption, so that it can be used to encrypt or decrypt data
+     */
+    public Property<T> setEncryption(Encryption e) {
+        // do nothing by default see StringProperty for an example
+        return null;
     }
 
     /**
