@@ -15,23 +15,16 @@ package org.talend.daikon.properties;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-
 import org.junit.Test;
 import org.talend.daikon.NamedThing;
 import org.talend.daikon.SimpleNamedThing;
-import org.talend.daikon.crypto.CipherSources;
-import org.talend.daikon.crypto.Encryption;
 import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.exception.error.CommonErrorCodes;
 import org.talend.daikon.properties.property.Property.Flags;
-import org.talend.daikon.properties.property.Property;
 import org.talend.daikon.properties.property.StringProperty;
 
 public class StringPropertyTest {
@@ -90,7 +83,7 @@ public class StringPropertyTest {
     }
 
     @Test
-    public void testEncryptStringProp() throws NoSuchAlgorithmException {
+    public void testEncryptStringProp() {
         StringProperty stringProperty = new StringProperty("foo") {// in order to have i18n related to this class
         };
         stringProperty.setValue("foo");
@@ -109,34 +102,5 @@ public class StringPropertyTest {
         assertNotEquals("foo", stringProperty.getValue());
         stringProperty.encryptStoredValue(false);
         assertEquals("foo", stringProperty.getValue());
-
-        // set encryption, encrypt/decrypt with AES
-        KeyGenerator kg = KeyGenerator.getInstance("AES");
-        kg.init(256);
-        SecretKey key = kg.generateKey();
-
-        Encryption e = new Encryption(() -> key.getEncoded(), CipherSources.getDefault());
-
-        stringProperty.setEncryption(e);
-
-        assertEquals("foo", stringProperty.getValue());
-        stringProperty.encryptStoredValue(true);
-        assertNotEquals("foo", stringProperty.getValue());
-        assertTrue(stringProperty.getValue().startsWith("aes:"));
-        stringProperty.encryptStoredValue(false);
-        assertEquals("foo", stringProperty.getValue());
-
-        stringProperty.setEncryption(null);
-        assertEquals("foo", stringProperty.getValue());
-        // encrypt by DES
-        stringProperty.encryptStoredValue(true);
-        assertNotEquals("foo", stringProperty.getValue());
-
-        Property<String> sp = stringProperty.setEncryption(e);
-        assertEquals(stringProperty, sp);
-        // decrypt by DES, even encryption was set
-        stringProperty.encryptStoredValue(false);
-        assertEquals("foo", stringProperty.getValue());
-
     }
 }
